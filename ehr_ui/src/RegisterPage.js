@@ -2,11 +2,19 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 const RegisterPage = () => {
-  const [username, setUsername] = useState("");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const [formData, setFormData] = useState({
+    username: "",
+    email: "",
+    password: "",
+  });
   const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
   const navigate = useNavigate();
+
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormData({ ...formData, [name]: value });
+  };
 
   const handleRegister = async (e) => {
     e.preventDefault();
@@ -17,75 +25,95 @@ const RegisterPage = () => {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ username, email, password }),
+        body: JSON.stringify(formData),
       });
-
-      const data = await response.json();
 
       if (response.ok) {
         setError("");
-        alert("Registration successful! Please log in.");
-        navigate("/login"); // Redirect to login page
+        setSuccess("Registration successful! Redirecting to login...");
+        setTimeout(() => navigate("/login"), 2000); // Redirect to login page after 2 seconds
       } else {
-        setError(data.error || "Registration failed.");
+        const data = await response.json();
+        setError(data.error || "Failed to register.");
       }
     } catch (err) {
-      console.error("Error during registration:", err);
-      setError("An error occurred. Please try again.");
+      console.error("Error registering:", err);
+      setError("Failed to register.");
     }
   };
 
   return (
     <div className="container mt-5">
-      <h2 className="text-center mb-4">Register</h2>
-      {error && <div className="alert alert-danger">{error}</div>}
-      <form onSubmit={handleRegister}>
-        <div className="mb-3">
-          <label htmlFor="username" className="form-label">
-            Username
-          </label>
-          <input
-            type="text"
-            id="username"
-            className="form-control"
-            placeholder="Enter your username"
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
-            required
-          />
+      <div className="row justify-content-center">
+        <div className="col-md-6">
+          <div className="card shadow">
+            <div className="card-body">
+              <h2 className="text-center mb-4">Register</h2>
+              {error && <div className="alert alert-danger">{error}</div>}
+              {success && <div className="alert alert-success">{success}</div>}
+              <form onSubmit={handleRegister}>
+                <div className="mb-3">
+                  <label htmlFor="username" className="form-label">
+                    Username
+                  </label>
+                  <input
+                    type="text"
+                    id="username"
+                    name="username"
+                    className="form-control"
+                    placeholder="Enter your username"
+                    value={formData.username}
+                    onChange={handleInputChange}
+                    required
+                  />
+                </div>
+                <div className="mb-3">
+                  <label htmlFor="email" className="form-label">
+                    Email
+                  </label>
+                  <input
+                    type="email"
+                    id="email"
+                    name="email"
+                    className="form-control"
+                    placeholder="Enter your email"
+                    value={formData.email}
+                    onChange={handleInputChange}
+                    required
+                  />
+                </div>
+                <div className="mb-3">
+                  <label htmlFor="password" className="form-label">
+                    Password
+                  </label>
+                  <input
+                    type="password"
+                    id="password"
+                    name="password"
+                    className="form-control"
+                    placeholder="Enter your password"
+                    value={formData.password}
+                    onChange={handleInputChange}
+                    required
+                  />
+                </div>
+                <button type="submit" className="btn btn-primary w-100">
+                  Register
+                </button>
+              </form>
+              <p className="text-center mt-3">
+                Already have an account?{" "}
+                <button
+                  className="btn btn-link p-0"
+                  onClick={() => navigate("/login")}
+                >
+                  Login here
+                </button>
+              </p>
+            </div>
+          </div>
         </div>
-        <div className="mb-3">
-          <label htmlFor="email" className="form-label">
-            Email
-          </label>
-          <input
-            type="email"
-            id="email"
-            className="form-control"
-            placeholder="Enter your email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-          />
-        </div>
-        <div className="mb-3">
-          <label htmlFor="password" className="form-label">
-            Password
-          </label>
-          <input
-            type="password"
-            id="password"
-            className="form-control"
-            placeholder="Enter your password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-          />
-        </div>
-        <button type="submit" className="btn btn-primary w-100">
-          Register
-        </button>
-      </form>
+      </div>
     </div>
   );
 };

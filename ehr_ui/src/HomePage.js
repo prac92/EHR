@@ -16,6 +16,10 @@ const HomePage = () => {
     navigate("/appointments"); // Navigate to the Appointment Scheduling page
   };
 
+  const handleProfile = () => {
+    navigate("/profile"); // Navigate to the Appointment Scheduling page
+  };
+
   const handleLogout = () => {
     localStorage.removeItem("user"); // Clear user data
     navigate("/login"); // Redirect to login page
@@ -44,7 +48,7 @@ const HomePage = () => {
               <p className="card-text">
                 Update your profile and account settings.
               </p>
-              <button className="btn btn-primary">Go to Profile</button>
+              <button className="btn btn-primary" onClick={handleProfile}>Go to Profile</button>
             </div>
           </div>
         </div>

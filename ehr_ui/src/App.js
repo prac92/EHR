@@ -7,6 +7,7 @@ import RegisterPage from "./RegisterPage";
 import PatientManagementPage from "./PatientManagementPage";
 import MedicalHistoryTrackingPage from "./MedicalHistoryTrackingPage";
 import PatientAppointmentSchedulingPage from "./PatientAppointmentSchedulingPage";
+import ProfileSettingsPage from "./ProfileSettingsPage";
 
 function App() {
   return (
@@ -18,6 +19,7 @@ function App() {
         <Route path="/patients" element={<PatientManagementPage />} />
         <Route path="/medical-history" element={<MedicalHistoryTrackingPage />} />
         <Route path="/appointments" element={<PatientAppointmentSchedulingPage />} />
+        <Route path="/profile" element={<ProfileSettingsPage />} />
       </Routes>
     </Router>
   );
