@@ -69,7 +69,13 @@ const LoginPage = () => {
         <button type="submit" className="btn btn-primary w-100">
           Login
         </button>
-        
+        <button
+          type="button"
+          className="btn btn-secondary w-100"
+          onClick={() => navigate("/register")} // Redirect to RegisterPage
+        >
+          Register
+        </button>
       </form>
     </div>
   );

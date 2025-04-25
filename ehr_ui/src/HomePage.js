@@ -9,19 +9,32 @@ const HomePage = () => {
   };
 
   const handleNavigateToPatientsHistoryTracking = () => {
-    navigate("/medical-history"); // Navigate to the Patient Management page
+    navigate("/medical-history"); // Navigate to the Medical History Tracking page
   };
 
-  const handleNavigateToPatientsAchedulingPage = () => {
-    navigate("/appointments"); // Navigate to the Patient Management page
+  const handleNavigateToPatientsSchedulingPage = () => {
+    navigate("/appointments"); // Navigate to the Appointment Scheduling page
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem("user"); // Clear user data
+    navigate("/login"); // Redirect to login page
   };
 
   return (
     <div className="container mt-5">
-      <h1 className="text-center mb-4">Welcome to the EHR System</h1>
+      {/* Navigation Bar */}
+      <div className="d-flex justify-content-between align-items-center mb-4">
+        <h1>Welcome to the EHR System</h1>
+        <button className="btn btn-danger" onClick={handleLogout}>
+          Logout
+        </button>
+      </div>
+
       <p className="text-center lead">
         Manage all aspects of your healthcare system from one place.
       </p>
+
       <div className="row mt-4">
         {/* Profile Settings */}
         <div className="col-md-4 mb-4">
@@ -44,12 +57,15 @@ const HomePage = () => {
               <p className="card-text">
                 Add, view, and manage patient records.
               </p>
-              <button className="btn btn-primary" onClick={handleNavigateToPatients}>Manage Patients</button>
+              <button
+                className="btn btn-primary"
+                onClick={handleNavigateToPatients}
+              >
+                Manage Patients
+              </button>
             </div>
           </div>
         </div>
-
-        
 
         {/* Appointment Scheduling */}
         <div className="col-md-4 mb-4">
@@ -59,7 +75,12 @@ const HomePage = () => {
               <p className="card-text">
                 Schedule, update, and manage appointments.
               </p>
-              <button className="btn btn-primary" onClick={handleNavigateToPatientsAchedulingPage}>View Appointments</button>
+              <button
+                className="btn btn-primary"
+                onClick={handleNavigateToPatientsSchedulingPage}
+              >
+                View Appointments
+              </button>
             </div>
           </div>
         </div>
@@ -72,12 +93,15 @@ const HomePage = () => {
               <p className="card-text">
                 Record and view patient medical histories.
               </p>
-              <button className="btn btn-primary" onClick={handleNavigateToPatientsHistoryTracking}>Track History</button>
+              <button
+                className="btn btn-primary"
+                onClick={handleNavigateToPatientsHistoryTracking}
+              >
+                Track History
+              </button>
             </div>
           </div>
         </div>
-
-        
       </div>
     </div>
   );

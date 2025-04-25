@@ -4,36 +4,104 @@ import { Modal, Button, Form } from "react-bootstrap";
 
 const MedicalHistoryTrackingPage = () => {
   const navigate = useNavigate();
-  // State for medical history
-  const [medicalHistory, setMedicalHistory] = useState([
-    {
-      id: 1,
-      illness: "Diabetes",
-      surgeries: "Appendectomy",
-      medications: "Metformin",
-      updatedAt: "2025-04-01",
-    },
-    {
-      id: 2,
-      illness: "Hypertension",
-      surgeries: "None",
-      medications: "Amlodipine",
-      updatedAt: "2025-03-15",
-    },
-  ]);
 
-  // State for modals
-  const [showModal, setShowModal] = useState(false);
+  // State for medical history
+  const [medicalHistory, setMedicalHistory] = useState([]);
+  const [patientId, setPatientId] = useState("");
   const [currentRecord, setCurrentRecord] = useState({
     id: 0,
     illness: "",
     surgeries: "",
     medications: "",
-    updatedAt: "",
   });
+  const [showModal, setShowModal] = useState(false);
+  const [error, setError] = useState("");
+
+  // Fetch medical history for a patient
+  const fetchMedicalHistory = async () => {
+    if (!patientId) {
+      setError("Please enter a valid Patient ID.");
+      return;
+    }
+
+    try {
+      const response = await fetch(`http://localhost:5000/api/medical-history/${patientId}`);
+      const data = await response.json();
+
+      if (response.ok) {
+        setError("");
+        setMedicalHistory(data);
+      } else {
+        setError(data.error || "Failed to fetch medical history.");
+      }
+    } catch (err) {
+      console.error("Error fetching medical history:", err);
+      setError("Failed to fetch medical history.");
+    }
+  };
+
+  // Handle form input changes
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setCurrentRecord({ ...currentRecord, [name]: value });
+  };
+
+  // Add new medical history
+  const handleAddMedicalHistory = async (e) => {
+    e.preventDefault();
+
+    try {
+      const response = await fetch("http://localhost:5000/api/medical-history", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ patient_id: patientId, ...currentRecord }),
+      });
+
+      if (response.ok) {
+        setError("");
+        fetchMedicalHistory(); // Refresh the medical history list
+        handleCloseModal(); // Close the modal
+      } else {
+        const data = await response.json();
+        setError(data.error || "Failed to add medical history.");
+      }
+    } catch (err) {
+      console.error("Error adding medical history:", err);
+      setError("Failed to add medical history.");
+    }
+  };
+
+  // Update medical history
+  const handleUpdateMedicalHistory = async (e) => {
+    e.preventDefault();
+
+    try {
+      const response = await fetch(`http://localhost:5000/api/medical-history/${currentRecord.id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(currentRecord),
+      });
+
+      if (response.ok) {
+        setError("");
+        fetchMedicalHistory(); // Refresh the medical history list
+        handleCloseModal(); // Close the modal
+      } else {
+        const data = await response.json();
+        setError(data.error || "Failed to update medical history.");
+      }
+    } catch (err) {
+      console.error("Error updating medical history:", err);
+      setError("Failed to update medical history.");
+    }
+  };
 
   // Open modal for adding or editing
-  const handleShowModal = (record = { id: 0, illness: "", surgeries: "", medications: "", updatedAt: "" }) => {
+  const handleShowModal = (record = { id: 0, illness: "", surgeries: "", medications: "" }) => {
     setCurrentRecord(record);
     setShowModal(true);
   };
@@ -41,47 +109,57 @@ const MedicalHistoryTrackingPage = () => {
   // Close modal
   const handleCloseModal = () => {
     setShowModal(false);
-    setCurrentRecord({ id: 0, illness: "", surgeries: "", medications: "", updatedAt: "" });
+    setCurrentRecord({ id: 0, illness: "", surgeries: "", medications: "" });
   };
 
-  // Handle form submission
-  const handleFormSubmit = (e) => {
-    e.preventDefault();
-    const updatedRecord = {
-      ...currentRecord,
-      updatedAt: new Date().toISOString().split("T")[0], // Set current date
-    };
-
-    if (currentRecord.id === 0) {
-      // Add new record
-      setMedicalHistory([...medicalHistory, { ...updatedRecord, id: medicalHistory.length + 1 }]);
-    } else {
-      // Update existing record
-      setMedicalHistory(
-        medicalHistory.map((record) =>
-          record.id === currentRecord.id ? updatedRecord : record
-        )
-      );
-    }
-    handleCloseModal();
+  // Handle logout
+  const handleLogout = () => {
+    localStorage.removeItem("user"); // Clear user data
+    navigate("/login"); // Redirect to login page
   };
-   // Navigate back to home page
-   const handleBackToHome = () => {
-    navigate("/home");};
 
   return (
     <div className="container mt-5">
-      <h1 className="text-center mb-4">Medical History Tracking</h1>
-      <button className="btn btn-secondary" onClick={handleBackToHome}>
-          Back to Home
+      {/* Navigation Bar */}
+      <div className="d-flex justify-content-between align-items-center mb-4">
+        <h1>Medical History Tracking</h1>
+        <div>
+          <button className="btn btn-primary me-2" onClick={() => navigate("/home")}>
+            Home
+          </button>
+          <button className="btn btn-danger" onClick={handleLogout}>
+            Logout
+          </button>
+        </div>
+      </div>
+
+      {error && <div className="alert alert-danger">{error}</div>}
+
+      {/* Patient ID Input */}
+      <div className="mb-4">
+        <label htmlFor="patientId" className="form-label">
+          Patient ID
+        </label>
+        <input
+          type="number"
+          id="patientId"
+          className="form-control"
+          placeholder="Enter Patient ID"
+          value={patientId}
+          onChange={(e) => setPatientId(e.target.value)}
+        />
+        <button className="btn btn-primary mt-2" onClick={fetchMedicalHistory}>
+          Fetch Medical History
         </button>
+      </div>
+
+      {/* Medical History Table */}
       <table className="table table-striped">
         <thead>
           <tr>
             <th>Illness</th>
             <th>Surgeries</th>
             <th>Medications</th>
-            <th>Last Updated</th>
             <th>Actions</th>
           </tr>
         </thead>
@@ -91,10 +169,9 @@ const MedicalHistoryTrackingPage = () => {
               <td>{record.illness}</td>
               <td>{record.surgeries}</td>
               <td>{record.medications}</td>
-              <td>{record.updatedAt}</td>
               <td>
                 <button
-                  className="btn btn-primary btn-sm me-2"
+                  className="btn btn-warning btn-sm me-2"
                   onClick={() => handleShowModal(record)}
                 >
                   Edit
@@ -104,10 +181,7 @@ const MedicalHistoryTrackingPage = () => {
           ))}
         </tbody>
       </table>
-      <button
-        className="btn btn-success"
-        onClick={() => handleShowModal()}
-      >
+      <button className="btn btn-success" onClick={() => handleShowModal()}>
         Add Entry
       </button>
 
@@ -119,16 +193,15 @@ const MedicalHistoryTrackingPage = () => {
           </Modal.Title>
         </Modal.Header>
         <Modal.Body>
-          <Form onSubmit={handleFormSubmit}>
+          <Form onSubmit={currentRecord.id === 0 ? handleAddMedicalHistory : handleUpdateMedicalHistory}>
             <Form.Group className="mb-3">
               <Form.Label>Illness</Form.Label>
               <Form.Control
                 type="text"
+                name="illness"
                 placeholder="Enter illness"
                 value={currentRecord.illness}
-                onChange={(e) =>
-                  setCurrentRecord({ ...currentRecord, illness: e.target.value })
-                }
+                onChange={handleInputChange}
                 required
               />
             </Form.Group>
@@ -136,22 +209,20 @@ const MedicalHistoryTrackingPage = () => {
               <Form.Label>Surgeries</Form.Label>
               <Form.Control
                 type="text"
+                name="surgeries"
                 placeholder="Enter surgeries"
                 value={currentRecord.surgeries}
-                onChange={(e) =>
-                  setCurrentRecord({ ...currentRecord, surgeries: e.target.value })
-                }
+                onChange={handleInputChange}
               />
             </Form.Group>
             <Form.Group className="mb-3">
               <Form.Label>Medications</Form.Label>
               <Form.Control
                 type="text"
+                name="medications"
                 placeholder="Enter medications"
                 value={currentRecord.medications}
-                onChange={(e) =>
-                  setCurrentRecord({ ...currentRecord, medications: e.target.value })
-                }
+                onChange={handleInputChange}
                 required
               />
             </Form.Group>

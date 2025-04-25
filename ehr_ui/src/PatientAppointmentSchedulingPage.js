@@ -1,117 +1,265 @@
-//create patient appointment scheduling component that can Schedule, view, update, and cancel patient appointments.Track appointment status (e.g., scheduled, completed, cancelled)
-
-
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Modal, Button, Form } from "react-bootstrap";
 
 const PatientAppointmentSchedulingPage = () => {
-    const navigate = useNavigate();
+  const navigate = useNavigate();
+
   // State for appointments
-  const [appointments, setAppointments] = useState([
-    {
-      id: 1,
-      patientName: "John Doe",
-      date: "2025-04-25",
-      time: "10:00 AM",
-      status: "Scheduled",
-    },
-    {
-      id: 2,
-      patientName: "Jane Smith",
-      date: "2025-04-26",
-      time: "02:00 PM",
-      status: "Completed",
-    },
-  ]);
-
-  // State for modals
-  const [showModal, setShowModal] = useState(false);
-  const [currentAppointment, setCurrentAppointment] = useState({
-    id: 0,
-    patientName: "",
-    date: "",
-    time: "",
-    status: "Scheduled",
+  const [appointments, setAppointments] = useState([]);
+  const [patientId, setPatientId] = useState("");
+  const [formData, setFormData] = useState({
+    appointment_date: "",
+    notes: "",
   });
+  const [editingAppointmentId, setEditingAppointmentId] = useState(null);
+  const [error, setError] = useState("");
 
-  // Open modal for adding or editing
-  const handleShowModal = (appointment = { id: 0, patientName: "", date: "", time: "", status: "Scheduled" }) => {
-    setCurrentAppointment(appointment);
-    setShowModal(true);
-  };
-
-  // Close modal
-  const handleCloseModal = () => {
-    setShowModal(false);
-    setCurrentAppointment({ id: 0, patientName: "", date: "", time: "", status: "Scheduled" });
-  };
-
-  // Handle form submission
-  const handleFormSubmit = (e) => {
-    e.preventDefault();
-    if (currentAppointment.id === 0) {
-      // Add new appointment
-      setAppointments([
-        ...appointments,
-        { ...currentAppointment, id: appointments.length + 1 },
-      ]);
-    } else {
-      // Update existing appointment
-      setAppointments(
-        appointments.map((appointment) =>
-          appointment.id === currentAppointment.id
-            ? currentAppointment
-            : appointment
-        )
-      );
+  // Fetch appointments for a patient
+  const fetchAppointments = async () => {
+    if (!patientId) {
+      setError("Please enter a valid Patient ID.");
+      return;
     }
-    handleCloseModal();
+
+    try {
+      const response = await fetch(`http://localhost:5000/api/appointments/${patientId}`);
+      const data = await response.json();
+
+      if (response.ok) {
+        setError("");
+        setAppointments(data);
+      } else {
+        setError(data.error || "Failed to fetch appointments.");
+      }
+    } catch (err) {
+      console.error("Error fetching appointments:", err);
+      setError("Failed to fetch appointments.");
+    }
   };
 
-  // Handle delete
-  const handleDelete = (id) => {
-    setAppointments(appointments.filter((appointment) => appointment.id !== id));
+  // Handle form input changes
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormData({ ...formData, [name]: value });
   };
-  
-   // Navigate back to home page
-   const handleBackToHome = () => {
-    navigate("/home");
+
+  // Schedule a new appointment
+  const handleAddAppointment = async (e) => {
+    e.preventDefault();
+
+    try {
+      const response = await fetch("http://localhost:5000/api/appointments", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ patient_id: patientId, ...formData }),
+      });
+
+      if (response.ok) {
+        setError("");
+        fetchAppointments(); // Refresh the appointment list
+        setFormData({ appointment_date: "", notes: "" }); // Reset form
+      } else {
+        const data = await response.json();
+        setError(data.error || "Failed to schedule appointment.");
+      }
+    } catch (err) {
+      console.error("Error scheduling appointment:", err);
+      setError("Failed to schedule appointment.");
+    }
+  };
+
+  // Edit an appointment
+  const handleEditAppointment = (appointment) => {
+    setEditingAppointmentId(appointment.id);
+    setFormData({
+      appointment_date: appointment.appointment_date.split("T")[0],
+      notes: appointment.notes || "",
+    });
+  };
+
+  // Update an appointment
+  const handleUpdateAppointment = async (e) => {
+    e.preventDefault();
+
+    try {
+      const response = await fetch(`http://localhost:5000/api/appointments/${editingAppointmentId}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(formData),
+      });
+
+      if (response.ok) {
+        setError("");
+        fetchAppointments(); // Refresh the appointment list
+        setEditingAppointmentId(null); // Exit edit mode
+        setFormData({ appointment_date: "", notes: "" }); // Reset form
+      } else {
+        const data = await response.json();
+        setError(data.error || "Failed to update appointment.");
+      }
+    } catch (err) {
+      console.error("Error updating appointment:", err);
+      setError("Failed to update appointment.");
+    }
+  };
+
+  // Mark an appointment as completed
+  const handleMarkComplete = async (id) => {
+    try {
+      const response = await fetch(`http://localhost:5000/api/appointments/${id}/complete`, {
+        method: "PUT",
+      });
+
+      if (response.ok) {
+        setError("");
+        fetchAppointments(); // Refresh the appointment list
+      } else {
+        const data = await response.json();
+        setError(data.error || "Failed to mark appointment as completed.");
+      }
+    } catch (err) {
+      console.error("Error marking appointment as completed:", err);
+      setError("Failed to mark appointment as completed.");
+    }
+  };
+
+  // Cancel an appointment
+  const handleCancelAppointment = async (id) => {
+    try {
+      const response = await fetch(`http://localhost:5000/api/appointments/${id}/cancel`, {
+        method: "PUT",
+      });
+
+      if (response.ok) {
+        setError("");
+        fetchAppointments(); // Refresh the appointment list
+      } else {
+        const data = await response.json();
+        setError(data.error || "Failed to cancel appointment.");
+      }
+    } catch (err) {
+      console.error("Error canceling appointment:", err);
+      setError("Failed to cancel appointment.");
+    }
+  };
+
+  // Handle logout
+  const handleLogout = () => {
+    localStorage.removeItem("user"); // Clear user data
+    navigate("/login"); // Redirect to login page
   };
 
   return (
     <div className="container mt-5">
-      <h1 className="text-center mb-4">Patient Appointment Scheduling</h1>
-      <button className="btn btn-secondary" onClick={handleBackToHome}>
-          Back to Home
+      {/* Navigation Bar */}
+      <div className="d-flex justify-content-between align-items-center mb-4">
+        <h1>Appointment Scheduling</h1>
+        <div>
+          <button className="btn btn-primary me-2" onClick={() => navigate("/home")}>
+            Home
+          </button>
+          <button className="btn btn-danger" onClick={handleLogout}>
+            Logout
+          </button>
+        </div>
+      </div>
+
+      {error && <div className="alert alert-danger">{error}</div>}
+
+      {/* Patient ID Input */}
+      <div className="mb-4">
+        <label htmlFor="patientId" className="form-label">
+          Patient ID
+        </label>
+        <input
+          type="number"
+          id="patientId"
+          className="form-control"
+          placeholder="Enter Patient ID"
+          value={patientId}
+          onChange={(e) => setPatientId(e.target.value)}
+        />
+        <button className="btn btn-primary mt-2" onClick={fetchAppointments}>
+          Fetch Appointments
         </button>
+      </div>
+
+      {/* Appointment Form */}
+      <form onSubmit={editingAppointmentId ? handleUpdateAppointment : handleAddAppointment}>
+        <div className="mb-3">
+          <label htmlFor="appointment_date" className="form-label">
+            Appointment Date
+          </label>
+          <input
+            type="date"
+            id="appointment_date"
+            name="appointment_date"
+            className="form-control"
+            value={formData.appointment_date}
+            onChange={handleInputChange}
+            required
+          />
+        </div>
+        <div className="mb-3">
+          <label htmlFor="notes" className="form-label">
+            Notes
+          </label>
+          <textarea
+            id="notes"
+            name="notes"
+            className="form-control"
+            placeholder="Enter notes (optional)"
+            value={formData.notes}
+            onChange={handleInputChange}
+          />
+        </div>
+        <button type="submit" className="btn btn-primary w-100">
+          {editingAppointmentId ? "Update Appointment" : "Schedule Appointment"}
+        </button>
+      </form>
+
+      <hr />
+
+      {/* Appointment List */}
+      <h3 className="mt-4">Appointments</h3>
       <table className="table table-striped">
         <thead>
           <tr>
-            <th>Patient Name</th>
             <th>Date</th>
-            <th>Time</th>
             <th>Status</th>
+            <th>Notes</th>
             <th>Actions</th>
           </tr>
         </thead>
         <tbody>
           {appointments.map((appointment) => (
             <tr key={appointment.id}>
-              <td>{appointment.patientName}</td>
-              <td>{appointment.date}</td>
-              <td>{appointment.time}</td>
+              <td>{new Date(appointment.appointment_date).toLocaleDateString()}</td>
               <td>{appointment.status}</td>
+              <td>{appointment.notes}</td>
               <td>
                 <button
-                  className="btn btn-primary btn-sm me-2"
-                  onClick={() => handleShowModal(appointment)}
+                  className="btn btn-warning btn-sm me-2"
+                  onClick={() => handleEditAppointment(appointment)}
+                  disabled={appointment.status === "completed" || appointment.status === "cancelled"}
                 >
                   Edit
                 </button>
                 <button
+                  className="btn btn-success btn-sm me-2"
+                  onClick={() => handleMarkComplete(appointment.id)}
+                  disabled={appointment.status === "completed"}
+                >
+                  Mark Complete
+                </button>
+                <button
                   className="btn btn-danger btn-sm"
-                  onClick={() => handleDelete(appointment.id)}
+                  onClick={() => handleCancelAppointment(appointment.id)}
+                  disabled={appointment.status === "cancelled"}
                 >
                   Cancel
                 </button>
@@ -120,98 +268,6 @@ const PatientAppointmentSchedulingPage = () => {
           ))}
         </tbody>
       </table>
-      <button
-        className="btn btn-success"
-        onClick={() => handleShowModal()}
-      >
-        Schedule Appointment
-      </button>
-
-      {/* Modal */}
-      <Modal show={showModal} onHide={handleCloseModal}>
-        <Modal.Header closeButton>
-          <Modal.Title>
-            {currentAppointment.id === 0
-              ? "Schedule Appointment"
-              : "Edit Appointment"}
-          </Modal.Title>
-        </Modal.Header>
-        <Modal.Body>
-          <Form onSubmit={handleFormSubmit}>
-            <Form.Group className="mb-3">
-              <Form.Label>Patient Name</Form.Label>
-              <Form.Control
-                type="text"
-                placeholder="Enter patient name"
-                value={currentAppointment.patientName}
-                onChange={(e) =>
-                  setCurrentAppointment({
-                    ...currentAppointment,
-                    patientName: e.target.value,
-                  })
-                }
-                required
-              />
-            </Form.Group>
-            <Form.Group className="mb-3">
-              <Form.Label>Date</Form.Label>
-              <Form.Control
-                type="date"
-                value={currentAppointment.date}
-                onChange={(e) =>
-                  setCurrentAppointment({
-                    ...currentAppointment,
-                    date: e.target.value,
-                  })
-                }
-                required
-              />
-            </Form.Group>
-            <Form.Group className="mb-3">
-              <Form.Label>Time</Form.Label>
-              <Form.Control
-                type="time"
-                value={currentAppointment.time}
-                onChange={(e) =>
-                  setCurrentAppointment({
-                    ...currentAppointment,
-                    time: e.target.value,
-                  })
-                }
-                required
-              />
-            </Form.Group>
-            <Form.Group className="mb-3">
-              <Form.Label>Status</Form.Label>
-              <Form.Select
-                value={currentAppointment.status}
-                onChange={(e) =>
-                  setCurrentAppointment({
-                    ...currentAppointment,
-                    status: e.target.value,
-                  })
-                }
-              >
-                <option value="Scheduled">Scheduled</option>
-                <option value="Completed">Completed</option>
-                <option value="Cancelled">Cancelled</option>
-              </Form.Select>
-            </Form.Group>
-            <div className="d-flex justify-content-end">
-              <Button
-                variant="secondary"
-                onClick={handleCloseModal}
-                className="me-2"
-              >
-                Cancel
-              </Button>
-              <Button type="submit" variant="primary">
-                {currentAppointment.id === 0 ? "Schedule" : "Update"}
-              </Button>
-            </div>
-          </Form>
-        </Modal.Body>
-      </Modal>
     </div>
   );
 };
